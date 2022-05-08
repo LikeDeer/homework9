@@ -30,6 +30,11 @@ Node* searchIterative(Node* head, int key);  /* search the node for the key */
 int freeBST(Node* head); /* free all memories allocated to the tree */
 
 /* you may add your own defined functions if necessary */
+int isLeaf(Node* n);
+
+
+int IsInitialized(Node* h);
+int Scanf(int* k);
 
 
 int main()
@@ -65,17 +70,20 @@ int main()
 			break;
 		case 'n': case 'N':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			insert(head, key);
 			break;
 		case 'd': case 'D':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			deleteLeafNode(head, key);
 			break;
 		case 'f': case 'F':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			ptr = searchIterative(head, key);
 			if(ptr != NULL)
 				printf("\n node [%d] found at %p\n", ptr->key, ptr);
@@ -84,7 +92,8 @@ int main()
 			break;
 		case 's': case 'S':
 			printf("Your Key = ");
-			scanf("%d", &key);
+			// scanf("%d", &key);
+			if (Scanf(&key)) break;			// key에 정수가 아닌 입력값이 들어오면 수행 취소하도록 수정.
 			ptr = searchRecursive(head->left, key);
 			if(ptr != NULL)
 				printf("\n node [%d] found at %p\n", ptr->key, ptr);
@@ -111,6 +120,7 @@ int main()
 	return 1;
 }
 
+
 int initializeBST(Node** h) {
 
 	/* if the tree is not empty, then remove all allocated nodes from the tree*/
@@ -132,21 +142,19 @@ void inorderTraversal(Node* ptr)		// LVR
 	if (ptr)
 	{
 		inorderTraversal(ptr->left);
-		printf("%d", ptr->key);
-		inorderTraversal(ptr->left);
+		printf("%d ", ptr->key);
+		inorderTraversal(ptr->right);
 	}
-	printf("\n");
 }
 
 void preorderTraversal(Node* ptr)		// VLR
 {
 	if (ptr)
 	{
-		printf("%d", ptr->key);
+		printf("%d ", ptr->key);
 		preorderTraversal(ptr->left);
 		preorderTraversal(ptr->right);
 	}
-	printf("\n");
 }
 
 void postorderTraversal(Node* ptr)		// LRV
@@ -155,34 +163,144 @@ void postorderTraversal(Node* ptr)		// LRV
 	{
 		postorderTraversal(ptr->left);
 		postorderTraversal(ptr->right);
-		printf("%d", ptr->key);
+		printf("%d ", ptr->key);
 	}
-	printf("\n");
 }
 
 
+// 이게 왜 가능한거지 ?
 int insert(Node* head, int key)
+{
+	if (IsInitialized(head)) {
+		printf("Please initialize first and try again.\n");
+		return 1;
+	}
+
+	Node* temp = searchIterative(head, key);
+	Node* newNode;
+
+	if (temp || !(head->left)) {
+		newNode = (Node*) malloc(sizeof(Node));
+		newNode->key = key;
+		newNode->left = newNode->right = NULL;
+
+		if (head->left)
+			if (key < temp->key) temp->left = newNode;
+			else if (temp->key < key) temp->right = newNode;
+			else
+				// 기존 노드의 내용을 갱신하는 코드 (ex: temp->data = data)
+				printf("Updated the existing node.\n");
+		else head->left = newNode;
+	}
+
+	return 0;
+}
+
+
+int deleteLeafNode(Node* head, int key)
+{
+	Node* temp = searchRecursive(head, key);
+
+	if (temp->key == key) {
+		if ((temp->left == NULL) && (temp->right == NULL)) {
+			
+		}
+		else {
+			printf("Found the node, but it is not a leaf.\n");
+			return 1;
+		}
+	}
+	else {
+		printf("Couldn't find the node.\n");
+	}
+}
+
+
+Node* searchRecursive(Node* ptr, int key)
+{
+	static Node* prev = NULL;
+
+	if (!ptr) {
+		printf("Couldn't find a corresponding node.");
+		return prev;
+	}
+	if (key == ptr->key) {
+		printf("Found the corresponding node.\n");
+		return ptr;
+	}
+	if (key < ptr->key) {
+		prev = ptr;
+		return searchRecursive(ptr->left, key);
+	}
+	else {
+		prev = ptr;
+		return searchRecursive(ptr->right, key);
+	}
+}
+
+
+Node* searchIterative(Node* head, int key)
+{
+	Node* ptr = head->left;
+	Node* prev = NULL;
+
+	while (ptr)
+	{
+		if (key == ptr->key) {
+			printf("Found the corresponding node.\n");
+			return ptr;
+		}
+		if (key < ptr->key) {
+			prev = ptr;
+			ptr = ptr->left;
+		}
+		else {
+			prev = ptr;
+			ptr = ptr->right;
+		}
+	}
+	printf("Couldn't find a corresponding node.");
+	return prev;
+}
+
+
+/**
+ * @brief Deallocates all the nodes including root pointer
+ * 			before	the program terminates
+ * 				or	proceeding initialization
+ * 
+ * @param head 
+ * @return int 
+ * 			successful	 	=> 0
+ * 			unsuccessful	=> 1	
+ */
+int freeBST(Node* head)
 {
 	
 }
 
-int deleteLeafNode(Node* head, int key)
-{
 
+/*-------------- 개인 정의 함수 --------------*/
+
+/* initialize 안하고 insert나 delete의 command를 입력하면 Segmentation fault.
+	각 기능을 수행하기 전에 initialized 됐는지 확인하는 전처리용 함수. */
+int IsInitialized(Node* h) {
+	if (h == NULL) return 1;
+	else return 0;
 }
 
-Node* searchRecursive(Node* ptr, int key)
-{
-
-}
-
-Node* searchIterative(Node* head, int key)
-{
-
-}
-
-
-int freeBST(Node* head)
-{
-
+/* main의 scanf("%d", &key)를 대체하는 함수. key에 정수를 입력 받는다 */
+ /* 기존에서는 'Your key = '에 정수가 아닌 문자 등 다른 값을 입력하면
+ 	다음 프로그램 진행에 장애가 생긴다. 정수가 아닌 값을 입력 받으면 insert, delete 등
+	수행을 하지 않고 버퍼를 비우도록 하여 문제를 해결하였다. */
+int Scanf(int* k) {
+	if (scanf("%d", k) == 1) {			// 제대로 정수를 입력 받으면 scanf의 반환값은 1(읽은 항목의 개수)
+		while (getchar() != '\n');
+		return 0;
+	}
+	else {
+		printf("Not appropriate input. Input must be an integer. Try again.\n");
+		while (getchar() != '\n');
+		return 1;
+	}
 }
