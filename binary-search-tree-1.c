@@ -33,7 +33,6 @@ int freeBST(Node* head); /* free all memories allocated to the tree */
 void postorderTraversal_freeBST(Node* ptr);
 
 int IsInitialized(Node* h);
-int Scanf(int* k);
 
 
 int main()
@@ -80,9 +79,9 @@ int main()
 		case 'f': case 'F':
 			printf("Your Key = ");
 			scanf("%d", &key);
-
 			ptr = searchIterative(head, key);
-			if(ptr != NULL)
+			// if(ptr != NULL)
+			if (ptr->key == key)
 				printf("\n node [%d] found at %p\n", ptr->key, ptr);
 			else
 				printf("\n Cannot find the node [%d]\n", key);
@@ -164,7 +163,6 @@ void postorderTraversal(Node* ptr)		// LRV
 }
 
 
-// 이게 왜 가능한거지 ?
 int insert(Node* head, int key)
 {
 	if (IsInitialized(head)) {
@@ -172,22 +170,23 @@ int insert(Node* head, int key)
 		return 1;
 	}
 
-	Node* temp = searchIterative(head, key);
-	Node* newNode;
+	Node* newNode = (Node*) malloc(sizeof(Node));
+	newNode->key = key;
+	newNode->left = NULL;
+	newNode->right = NULL;
 
-	if (temp || !(head->left)) {
-		newNode = (Node*) malloc(sizeof(Node));
-		newNode->key = key;
-		newNode->left = newNode->right = NULL;
+	Node* temp = searchIterative(head, key);		// 부모가 될 노드 위치
 
-		if (head->left)
-			if (key < temp->key) temp->left = newNode;
-			else if (temp->key < key) temp->right = newNode;
-			else
-				// 기존 노드의 내용을 갱신하는 코드 (ex: temp->data = data)
-				printf("Updated the existing node.\n");
-		else head->left = newNode;
+	if (head->left) {	// 공백 트리가 아니면,
+		if (temp->key > key) temp->left = newNode;
+		else if (temp->key < key) temp->right = newNode;
+		else {		/* key를 가진 기존 노드가 있다면, 업데이트하는 코드를 실행하고 삽입은 안함. */ 
+			// 기존 노드의 내용을 갱신하는 코드 (ex: temp->data = data)
+			printf("Updated the existing node.\n");
+		}
 	}
+	else				// 공백 트리 였다면, 첫 노드로 삽입
+		head->left = newNode;
 
 	return 0;
 }
@@ -195,66 +194,96 @@ int insert(Node* head, int key)
 
 int deleteLeafNode(Node* head, int key)
 {
+	/* 전처리 */
 	if (IsInitialized(head)) {
 		printf("Please initialize first and try again.\n");
 		return 1;
 	}
 
-	Node* temp = searchRecursive(head->left, key);		// delete에서는 Recursive로 호출해보자
-
-	if (temp->key == key) {			// key를 가진 노드를 발견 했는데,
-		if ((temp->left == NULL) && (temp->right == NULL)) {	// leaf 이면,
-			free(temp);							// 삭제
-
-			temp = searchIterative(head->left, key);	// 그 부모 노드의 링크를 null로 초기화
-			if (temp->key < key) temp->left = NULL;
-			else temp->right = NULL;
-		}
-		else {						// leaf 가 아니면,
-			printf("Found the node but it was not a leaf.\n");
-			return 1;
-		}		
+	
+	if (head->left == NULL) {
+		printf("Nothing to delete.\n");
+		return 1;
 	}
-	else
-		printf("Couldn't find the node.\n");
 
-	return 0;
+
+	Node* ptr = head->left;
+	Node* prev = head;				// prev는 삭제하기 전 부모 노드
+
+	while(ptr) {
+
+		if(ptr->key == key) {		// key를 가진 노드를 찾았는데,
+			if(ptr->left == NULL && ptr->right == NULL) {		// leaf 노드 이면, 삭제
+				
+				if(prev == head)		// 첫 노드가 leaf 였다면, 삭제 후 공백 트리
+					head->left = NULL;
+
+				// 부모 노드 링크 NULL로 초기화
+				if(prev->left == ptr)
+					prev->left = NULL;
+				else
+					prev->right = NULL;
+
+				free(ptr);
+
+				return 0;
+			}
+			else {					// leaf 노드가 아니면 아무것도 안하기
+				printf("Found the node but it was not a leaf");
+			}
+			return 0;
+		}
+
+		// key를 가진 노드를 발견하지 못하면 다음 노드를 확인하기
+		prev = ptr;				// prev는 ptr을 따라가기
+
+		if(ptr->key < key)
+			ptr = ptr->right;
+		else
+			ptr = ptr->left;
+	}
+
+	printf("There's no key node.\n");
+
+	return 1;
 }
 
 
+/* 탐색에 성공하면, 그 노드를 반환. 실패하면 NULL을 반환 */
 Node* searchRecursive(Node* ptr, int key)
 {
-	static Node* prev = NULL;		// 탐색을 실패하면 NULL을 반환하지 않고
-									//   마지막 탐색 대상 노드인 prev를 반환
 	if (!ptr) {
-		return prev;
+		printf("Couldn't find it.\n");
+		return NULL;
 	}
+
 	if (key == ptr->key) {
 		return ptr;
 	}
-	if (key < ptr->key) {
-		prev = ptr;
+	else if (key < ptr->key) {
 		return searchRecursive(ptr->left, key);
 	}
 	else {
-		prev = ptr;
 		return searchRecursive(ptr->right, key);
 	}
 }
 
 
+/* 이 함수로 insert 에서 부모가 될 노드의 위치를 찾을 것이다.
+	searchRecursive 와 달리 탐색의 마지막 노드를 반환하도록 한다.
+	즉, 탐색에 실패했을 때, NULL을 반환하지 않고, 이전 탐색 노드를 반환한다. */
 Node* searchIterative(Node* head, int key)
 {
 	Node* ptr = head->left;
-	Node* prev = NULL;			// 탐색을 실패하면 NULL을 반환하지 않고
-								//   마지막 탐색 대상 노드인 prev를 반환
+	Node* prev = head;			// 탐색 실패 했을 때, prev를 반환한다.
+
 	while (ptr)
 	{
 		if (key == ptr->key) {
 			return ptr;
 		}
 		if (key < ptr->key) {
-			prev = ptr;
+			prev = ptr;				// 다음 노드를 탐색할 때, prev는 ptr을 따라감.
 			ptr = ptr->left;
 		}
 		else {
@@ -262,29 +291,21 @@ Node* searchIterative(Node* head, int key)
 			ptr = ptr->right;
 		}
 	}
-	
+
+	printf("Couldn't find the node.\n");
 	return prev;
 }
 
 
-/**
- * @brief Deallocates all the nodes including root pointer
- * 			before	the program terminates
- * 				or	proceeding initialization
- * 
- * @param head 
- * @return int 
- * 			successful	 	=> 0
- * 			unsuccessful	=> 1	
- */
 int freeBST(Node* head)
 {
 	if (IsInitialized(head))
 		return 1;
 
-	postorderTraversal_freeBST(head->left);
+	printf("Freeing\n");
+	postorderTraversal_freeBST(head->left);		// 개인 정의 함수 참고.
 	free(head);
-	printf("Good Bye\n");
+	printf("\n");
 
 	return 0;
 }
@@ -292,8 +313,7 @@ int freeBST(Node* head)
 
 /*-------------- 개인 정의 함수 --------------*/
 
-/* 모든 노드를 순회하는 함수 중 하나를 수정해서 freeBST를 구현. */
- /* 어떤 함수든, 노드들을 한 번씩만 방문하기 때문에 가능하다. */
+/* 모든 노드를 순회하는 함수 중 LRV를 수정해서 freeBST를 구현. */
 void postorderTraversal_freeBST(Node* ptr)		// LRV
 {
 	if (ptr)
@@ -301,7 +321,7 @@ void postorderTraversal_freeBST(Node* ptr)		// LRV
 		postorderTraversal_freeBST(ptr->left);
 		postorderTraversal_freeBST(ptr->right);
 		printf("%d ", ptr->key);
-		free(ptr);
+		free(ptr);					// V (본 노드 방문) 시 free
 	}
 }
 
