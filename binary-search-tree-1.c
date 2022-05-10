@@ -134,11 +134,6 @@ int initializeBST(Node** h) {
 
 void inorderTraversal(Node* ptr)		// LVR
 {
-	/* 전처리 */
-	if (IsInitialized(ptr)) {
-		printf("Please initialize first and try again.\n");
-	}
-
 	if (ptr)
 	{
 		inorderTraversal(ptr->left);	// L
@@ -149,11 +144,6 @@ void inorderTraversal(Node* ptr)		// LVR
 
 void preorderTraversal(Node* ptr)		// VLR
 {
-	/* 전처리 */
-	if (IsInitialized(ptr)) {
-		printf("Please initialize first and try again.\n");
-	}
-
 	if (ptr)
 	{
 		printf("%d ", ptr->key);		// V
@@ -164,11 +154,6 @@ void preorderTraversal(Node* ptr)		// VLR
 
 void postorderTraversal(Node* ptr)		// LRV
 {
-	/* 전처리 */
-	if (IsInitialized(ptr)) {
-		printf("Please initialize first and try again.\n");
-	}
-
 	if (ptr)
 	{
 		postorderTraversal(ptr->left);	// L
